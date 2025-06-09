@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Search through comments of any Reddit user. Find specific comments by keywords, phrases, or topics in a user's Reddit history.">
+    <meta name="keywords" content="Reddit, comment search, user comments, Reddit search tool, Reddit analyzer">
+    <title>Reddit Comment Search Tool | Search Any User's Comments</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        reddit: {
+                            dark: '#1A1A1B',
+                            light: '#DAE0E6',
+                            orange: '#FF4500',
+                            blue: '#0079D3',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        .theme-toggle {
+            transition: all 0.3s ease;
+        }
+        .theme-toggle:hover {
+            transform: rotate(30deg);
+        }
+        .result-item {
+            transition: all 0.2s ease;
+        }
+        .result-item:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-reddit-dark min-h-screen">
+    <header class="bg-white dark:bg-gray-900 shadow-md">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <i class="fab fa-reddit text-3xl text-reddit-orange mr-2"></i>
+                <h1 class="text-xl font-bold text-gray-800 dark:text-white">Reddit Comment Search</h1>
+            </div>
+            <button id="themeToggle" class="theme-toggle p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+                <i class="fas fa-moon dark:hidden"></i>
+                <i class="fas fa-sun hidden dark:inline"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <section class="mb-12">
+            <div class="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">Search Reddit User Comments</h2>
+                <p class="text-gray-600 dark:text-gray-300 mb-6">Enter a Reddit username and search query to find specific comments in their history.</p>
+                
+                <form id="searchForm" class="space-y-4">
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reddit Username</label>
+                        <div class="flex">
+                            <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">
+                                u/
+                            </span>
+                            <input type="text" id="username" name="username" required 
+                                   class="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-reddit-blue focus:border-reddit-blue"
+                                   placeholder="username">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="searchQuery" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search Query</label>
+                        <input type="text" id="searchQuery" name="searchQuery" required 
+                               class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-reddit-blue focus:border-reddit-blue"
+                               placeholder="What are you looking for?">
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <button type="submit" 
+                                class="px-4 py-2 bg-reddit-orange text-white rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-reddit-orange transition-colors">
+                            <i class="fas fa-search mr-2"></i> Search Comments
+                        </button>
+                        <div id="loadingSpinner" class="ml-4 hidden">
+                            <i class="fas fa-spinner fa-spin text-reddit-orange"></i>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="resultsSection" class="hidden">
+            <div class="max-w-3xl mx-auto">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Search Results</h2>
+                <div id="resultsContainer" class="space-y-4">
+                    <!-- Results will be inserted here by JavaScript -->
+                </div>
+                <div id="noResults" class="hidden text-center py-8">
+                    <i class="fas fa-comment-slash text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 dark:text-gray-300">No comments found matching your search criteria.</p>
+                </div>
+                <div id="errorMessage" class="hidden text-center py-8 text-red-500">
+                    <!-- Error messages will be shown here -->
+                </div>
+            </div>
+        </section>
+
+        <section class="mt-16 max-w-4xl mx-auto">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">About This Tool</h2>
+                
+                <div class="prose dark:prose-invert max-w-none">
+                    <h3 class="text-xl font-semibold mt-4">Features</h3>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>Search through any Reddit user's comment history</li>
+                        <li>Find specific keywords or phrases in comments</li>
+                        <li>Light and dark theme for comfortable browsing</li>
+                        <li>Fast and responsive interface</li>
+                        <li>No login required - completely anonymous</li>
+                    </ul>
+
+                    <h3 class="text-xl font-semibold mt-6">How To Use</h3>
+                    <ol class="list-decimal pl-5 space-y-2">
+                        <li>Enter the Reddit username you want to search (without the u/)</li>
+                        <li>Type your search query (keywords, phrases, etc.)</li>
+                        <li>Click "Search Comments"</li>
+                        <li>Browse through the matching comments</li>
+                    </ol>
+
+                    <h3 class="text-xl font-semibold mt-6">Privacy Information</h3>
+                    <p>This tool only accesses publicly available Reddit comments through the official Reddit API. We don't store any user data or search history on our servers.</p>
+
+                    <h3 class="text-xl font-semibold mt-6">Limitations</h3>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>Can only search public accounts (not private or deleted)</li>
+                        <li>Limited to the most recent 1000 comments due to API restrictions</li>
+                        <li>Rate limited by Reddit's API (about 60 requests per minute)</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-12">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <p class="text-gray-600 dark:text-gray-300">&copy; 2023 Reddit Comment Search Tool</p>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="#" class="text-gray-600 dark:text-gray-300 hover:text-reddit-orange">Privacy</a>
+                    <a href="#" class="text-gray-600 dark:text-gray-300 hover:text-reddit-orange">Terms</a>
+                    <a href="https://www.reddit.com" class="text-gray-600 dark:text-gray-300 hover:text-reddit-orange">Reddit</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        
+        // Check for saved theme preference or use system preference
+        const savedTheme = localStorage.getItem('theme') || 
+                          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        html.classList.add(savedTheme);
+        
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            const isDark = html.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        });
+
+        // Search form handling
+        const searchForm = document.getElementById('searchForm');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const noResults = document.getElementById('noResults');
+        const errorMessage = document.getElementById('errorMessage');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+
+        searchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const searchQuery = document.getElementById('searchQuery').value.trim();
+            
+            if (!username || !searchQuery) return;
+            
+            // Show loading spinner
+            loadingSpinner.classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+            noResults.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            resultsContainer.innerHTML = '';
+            
+            try {
+                // In a real implementation, you would call your PHP backend here
+                // For this example, we'll simulate a response
+                // const response = await fetch('search.php', {
+                //     method: 'POST',
+                //     headers: {
+                //         'Content-Type': 'application/x-www-form-urlencoded',
+                //     },
+                //     body: `username=${encodeURIComponent(username)}&searchQuery=${encodeURIComponent(searchQuery)}`
+                // });
+                // const data = await response.json();
+                
+                // Simulated response for demo purposes
+                const data = await simulateSearch(username, searchQuery);
+                
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+                
+                if (data.comments.length === 0) {
+                    noResults.classList.remove('hidden');
+                } else {
+                    displayResults(data.comments, username);
+                }
+                
+                resultsSection.classList.remove('hidden');
+            } catch (err) {
+                showError('An error occurred while searching. Please try again later.');
+                console.error(err);
+            } finally {
+                loadingSpinner.classList.add('hidden');
+            }
+        });
+
+        function displayResults(comments, username) {
+            resultsContainer.innerHTML = '';
+            
+            comments.forEach(comment => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item bg-white dark:bg-gray-800 rounded-lg shadow p-4 border-l-4 border-reddit-orange';
+                
+                const date = new Date(comment.created * 1000).toLocaleString();
+                const highlightedBody = highlightSearchQuery(comment.body, document.getElementById('searchQuery').value.trim());
+                
+                resultItem.innerHTML = `
+                    <div class="flex items-start mb-2">
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-gray-800 dark:text-white">
+                                <a href="https://reddit.com${comment.permalink}" target="_blank" class="hover:underline">
+                                    ${comment.subreddit}
+                                </a>
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">${date} • ${comment.score} points</p>
+                        </div>
+                        <a href="https://reddit.com${comment.permalink}" target="_blank" 
+                           class="text-sm text-reddit-blue hover:underline ml-2">
+                            View <i class="fas fa-external-link-alt ml-1"></i>
+                        </a>
+                    </div>
+                    <div class="prose dark:prose-invert max-w-none">
+                        ${highlightedBody}
+                    </div>
+                `;
+                
+                resultsContainer.appendChild(resultItem);
+            });
+        }
+
+        function highlightSearchQuery(text, query) {
+            if (!query) return text;
+            
+            const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi');
+            return text.replace(regex, '<span class="bg-yellow-200 dark:bg-yellow-800">$1</span>');
+        }
+
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hidden');
+        }
+
+        // Simulated search function for demo purposes
+        async function simulateSearch(username, query) {
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 800));
+            
+            // Return mock data based on the query
+            if (username.toLowerCase() === 'demoerror') {
+                return { error: "User not found or account is private" };
+            }
+            
+            if (username.toLowerCase() === 'demoempty') {
+                return { comments: [] };
+            }
+            
+            const mockComments = [
+                {
+                    body: `I was searching for ${query} the other day and found some interesting results. The ${query} phenomenon is really fascinating when you think about it.`,
+                    subreddit: "r/science",
+                    score: 42,
+                    created: Date.now() / 1000 - 3600 * 24 * 2,
+                    permalink: "/r/science/comments/12345/comment/abcde/"
+                },
+                {
+                    body: `In my opinion, ${query} is overrated. People make too much fuss about ${query} when there are more important things to consider. Just my two cents.`,
+                    subreddit: "r/unpopularopinion",
+                    score: 15,
+                    created: Date.now() / 1000 - 3600 * 24 * 5,
+                    permalink: "/r/unpopularopinion/comments/67890/comment/fghij/"
+                },
+                {
+                    body: `Has anyone else noticed how ${query} has changed over the years? I remember when ${query} was completely different back in the day. The evolution of ${query} is remarkable.`,
+                    subreddit: "r/AskReddit",
+                    score: 128,
+                    created: Date.now() / 1000 - 3600 * 24 * 10,
+                    permalink: "/r/AskReddit/comments/54321/comment/klmno/"
+                }
+            ];
+            
+            return { comments: mockComments };
+        }
+    </script>
+</body>
+</html>
